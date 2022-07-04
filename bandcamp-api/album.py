@@ -1,5 +1,4 @@
 import json
-import re
 import requests
 from bs4 import BeautifulSoup
 from bs4 import FeatureNotFound
@@ -9,27 +8,29 @@ import time
 import logging
 
 from bandcampjson import BandcampJSON
+from track import Track
 
 class Album:
 
     def __init__(self, album_url, debugging: bool = False):
-        self.album = ""
-        self.artist = ""
+        self.album_title = ""
+        self.artist_title = ""
         self.tracks = []
         self.art_url = ""
         self.album_url = ""
         self.artist_url = ""
         self.all_songs_available = False
-        self.price = [0.00, "USD"]
+        self.price = {}
         self.keywords = []
-        self.publisher = ""
+        self.publisher_title = ""
         self.preorder = False
 
         # need to do
         self.album_bio = ""
 
-        self.relased = 0    # utc unixtime
-        self.published = 0  # utc unixtime
+        self.date_released = 0    # utc unixtime
+        self.date_published = 0  # utc unixtime
+        self.date_last_modified = 0
 
         # extra, ignore
         self.soup = None
@@ -40,7 +41,6 @@ class Album:
         # fix it or make it better
         self.advanced = {
             "copyright": "",
-            "last_edited": 0,
             "ids": {
                 "artist_id": 0,
                 "album_id": 0,
@@ -56,18 +56,18 @@ class Album:
         try:
             page_json = self.get_json(url = album_url)
 
-            with open('output.json', 'w+') as file:
-                file.write(json.dumps(page_json, indent=4))
         except Exception as err:
             print(err)
             raise AttributeError("Either the album URL given is either private, deleted or the link is malformed.")
 
-        self.artist = page_json['artist']
+        self.artist_title = page_json['artist']
+        self.artist_title = ' '.join(self.artist_title.split())
 
         try:
-            self.album = page_json['current']['title']
+            self.album_title = page_json['current']['title']
+            self.album_title = ' '.join(self.album_title.split())
         except:
-            self.album = page_json['trackinfo'][0]['title']
+            self.album_title = page_json['trackinfo'][0]['title']
 
         self.album_url = album_url
 
@@ -78,55 +78,39 @@ class Album:
             self.artist_url = page_json['url'].rpartition('/album')[0]
 
         for trackjson in page_json['trackinfo']:
-            track = Track()
-
-            track.set_title(trackjson['title'])
-            track.set_track_number(trackjson['track_num'])
-            track.set_duration_seconds(trackjson['duration'])
-
-            # this is like this bc i was dumb and dont
-            # want to fix it, dont care
             try:
-                lyrics_link = str(self.artist_url + trackjson['title_link'] + '#lyrics')
-                track_lyrics = self.get_track_lyrics(lyrics_link)
+                track = Track(str(self.artist_url + trackjson['title_link']))
+                self.tracks.append(track)
             except:
-                track_lyrics = ''
-
-            track.set_lyrics(track_lyrics)
-
-            if trackjson['file'] is None:
-                track.set_available(False)
-            else:
-                track.set_available(True)
-
-            self.tracks.append(track)
+                pass
 
         self.all_songs_available = self.are_all_songs_available(page_json['trackinfo'])
 
-        self.art_url = self.get_album_art()
+        self.art_url = 'https://f4.bcbits.com/img/a' + str(page_json['current']['art_id']) + '_0.jpg'
 
         self.keywords = page_json['keywords']
 
         self.publisher = page_json['publisher']['@id']
 
-        self.album_bio = page_json['current']['about']
+        if page_json['current']['about'] != None:
+            self.album_bio = page_json['current']['about']
 
         # currently some albums get a time of 0, need to look if there are
         # some other places to find the released and publish times.
         try:
-            self.relased = datetime.strptime(page_json['album_release_date'], '%d %B %Y %H:%M:%S %Z')
-            self.relased = int(time.mktime(self.relased.timetuple()))
+            self.date_released = datetime.strptime(page_json['album_release_date'], '%d %b %Y %H:%M:%S %Z')
+            self.date_released = int(time.mktime(self.date_released.timetuple()))
         except:
-            self.relased = 0
+            self.date_released = 0
         
         try:
-            self.published = datetime.strptime(page_json['datePublished'], '%d %B %Y %H:%M:%S %Z')
-            self.published = int(time.mktime(self.published.timetuple()))
+            self.date_published = datetime.strptime(page_json['datePublished'], '%d %b %Y %H:%M:%S %Z')
+            self.date_published = int(time.mktime(self.date_published.timetuple()))
         except:
-            self.published = 0
+            self.date_published = 0
 
-        self.price[0] = float(page_json["current"]["minimum_price"])
-        self.price[1] = page_json['albumRelease'][0]['offers']['priceCurrency']
+        self.price['amount'] = float(page_json["current"]["minimum_price"])
+        self.price['currency'] = page_json['albumRelease'][0]['offers']['priceCurrency']
 
         try:
             self.preorder = bool(page_json['album_is_preorder'])
@@ -139,158 +123,61 @@ class Album:
         self.advanced['copyright'] = page_json['copyrightNotice']
 
         try:
-            self.advanced['last_edited'] = datetime.strptime(page_json['dateModified'], '%d %B %Y %H:%M:%S %Z')
-            self.advanced['last_edited'] = int(time.mktime(self.advanced['last_edited'].timetuple()))
+            self.date_last_modified = datetime.strptime(page_json['dateModified'], '%d %b %Y %H:%M:%S %Z')
+            self.date_last_modified = int(time.mktime(self.date_last_modified.timetuple()))
         except:
-            self.advanced['last_edited'] = self.published
+            self.advanced['last_edited'] = self.date_published
 
         self.advanced['ids']['artist_id'] = page_json['current']['band_id']
         self.advanced['ids']['album_id'] = page_json['id']
         self.advanced['ids']['art_id'] = page_json['current']['art_id']
         self.advanced['ids']['seller_id'] = page_json['current']['selling_band_id']
         self.advanced['featured_track'] = page_json['additionalProperty'][1]["value"]
-        self.advanced['email_required'] = page_json['current']['require_email']
 
-        for review in page_json['comment']:
-            current_review = {}
-            try:
-                current_review["username"] = str(review['author']['name'])
-            except:
-                current_review["username"] = None
-            current_review['profile_url'] = review['author']['url']
-            current_review['profile_picture'] = review['author']['image']
-            current_review['review'] = str(review['text'][0])
-            try:
-                current_review['favorite_track'] = str(review['text'][1].split(": ")[1])
-            except:
-                current_review['favorite_track'] = None
+        if page_json['current']['require_email'] != None:
+            self.advanced['email_required'] = page_json['current']['require_email']
+        else:
+            self.advanced['email_required'] = False
+        
+        try:
+            for review in page_json['comment']:
+                current_review = {}
+                try:
+                    current_review["username"] = str(review['author']['name'])
+                    current_review['username'] =  ' '.join( current_review["username"].split())
+                except:
+                    current_review["username"] = ""
 
-            self.advanced['reviews'].append(current_review)
+                current_review['profile_url'] = review['author']['url']
 
-        for supporter in page_json['sponsor']:
-            current_supporter = {}
+                current_review['profile_picture'] = review['author']['image']
+                current_review['profile_picture'] = current_review['profile_picture'].split('_')[0] + '_0.jpg'
 
-            current_supporter['username'] = supporter['name']
-            current_supporter['profile_url'] = supporter['url']
-            current_supporter['profile_picture'] = supporter['image']
+                current_review['review'] = str(review['text'][0])
+                current_review['review'] = ' '.join(current_review['review'].split())
+                try:
+                    current_review['favorite_track'] = str(review['text'][1].split(": ")[1])
+                except:
+                    current_review['favorite_track'] = None
 
-            self.advanced['supporters'].append(current_supporter)
+                self.advanced['reviews'].append(current_review)
+        except:
+            pass
 
-    # setters
-    def set_album(self, new_album):
-        self.album = new_album
+        try:
+            for supporter in page_json['sponsor']:
+                try:
+                    current_supporter = {}
 
-    def set_artist(self, new_artist):
-        self.artist = new_artist
+                    current_supporter['username'] = supporter['name']
+                    current_supporter['profile_url'] = supporter['url']
+                    current_supporter['profile_picture'] = supporter['image'].split('_')[0] + '_0.jpg'
 
-    # NEED TO MAKE A METHOD TO SET TRACKS
-    # Idea, need a track object, and a position
-    # then sets overwrites the track in the position
-    # then if it doesnt exist, add to that position
-    # lets say the album is 4 songs long, but you
-    # are trying to add a song to position 6
-    # there should be some way to handle that,
-    # like what do i do to that empty position of track 5
-
-    def set_art_url(self, new_art_url):
-        self.art_url = new_art_url
-
-    def set_album_url(self, new_album_url):
-        self.art_url = new_album_url
-
-    def set_artist_url(self, new_artist_url):
-        self.artist_url = new_artist_url
-
-    # need to check for unity in how i describe
-    # if all the songs are there 
-    # like should i used released ot available.
-    # probably available, since a song can be released
-    # but not available to stream
-    # so change all occurences of released to available
-    def set_all_songs_available(self, new_all_songs_available):
-        self.all_songs_available = new_all_songs_available
-
-    def set_price(self, new_amount, new_currency='USD'):
-        '''Set the price of this album with an amount and currency type
-        :param new_amount: The price of the album as a float
-        :param new_currency: The 3 char code (ISO 4217) of a particular crrency. USD is the default
-        '''
-        self.price = [float(new_amount), str(new_currency)]
-
-    # need to make two methods to add and remove keywords
-
-    # def add_keyword(self, new_keyword):
-
-    # def remove_keyword(self, old_keyword):
-
-    def set_publisher(self, new_publisher):
-        self.publisher = new_publisher
-
-    def set_published_date(self, new_date):
-        """Sets the published date, is in UNIX timestamp format"""
-        self.published = new_date
-
-    def set_released_date(self, new_date):
-        """Sets the released date, it is in UNIX timestamp format"""
-        self.relased = new_date
-
-    def set_preorder(self, new_preorder):
-        """Sets the preorder status. This is because preorder will have UNIX time of 0, which can be confusing if there is a time error"""
-        self.preorder = new_preorder
-    # getters
-    def get_album_title(self):
-        return str(self.album)
-
-    def get_album_artist(self):
-        return str(self.artist)
-
-    def get_tracks(self):
-        """Returns an array of Track objects"""
-        return self.tracks
-
-    def get_album_art_url(self):
-        """Returns the URL of the album art"""
-        return self.art_url
-
-    def get_album_url(self):
-        """Retuns a the Bandcamp link to the album"""
-        return str(self.album_url)
-
-    def get_artist_url(self):
-        """Returns the Bandcamp link for the artist (seller)"""
-        return self.artist_url
-
-    def get_all_songs_available(self):
-        """Returns True if all songs are avaible to stream. False if not"""
-        return self.all_songs_available
-
-    def get_album_price(self):
-        """Returns an array to represent the price. First is the amount as float, second is the 3 char code (ISO 4217) for a given currency. Defaults to USD"""
-        return self.price
-
-    def get_album_keywords(self):
-        """Returns an array of all the keywords that the artist applied to this album"""
-        return self.keywords
-
-    def get_album_publisher(self):
-        """Retruns the publisher of this album"""
-        return self.publisher
-
-    def get_released_date(self):
-        """Returns a UNIX timestamp of when the album was released"""
-        return self.relased
-
-    def get_published_date(self):
-        """Returns a UNIX timestamp of then the album was published to Bandcamp"""
-        return self.published
-
-    def get_preorder_status(self):
-        """Returns True if album is currently under preorder, False if not"""
-        return self.preorder
-
-    def get_advanced(self):
-        """Returns a dict of some more 'advanced' information"""
-        return self.advanced
+                    self.advanced['supporters'].append(current_supporter)
+                except:
+                    pass
+        except:
+            pass
     
     # other methods
     # need to organize the order of methods
@@ -362,54 +249,3 @@ class Album:
             return track_lyrics.text
         else:
             return ''
-
-            
-
-    
-
-class Track:
-    def __init__(self, debugging: bool = False):
-        self.title = ""
-        self.track_number = ""
-        self.duration_seconds = 0.00
-        self.lyrics = ""
-        self.available = False
-        self.track_id = 0
-
-    # setters
-    def set_title(self, new_title):
-        self.title = new_title
-
-    def set_track_number(self, new_track_number):
-        self.track_number = new_track_number
-
-    def set_duration_seconds(self, new_duration):
-        self.duration = new_duration
-
-    def set_lyrics(self, new_lyrics):
-        self.lyrics = new_lyrics
-
-    def set_available(self, new_availablity):
-        self.available = new_availablity
-
-    def set_track_id(self, new_track_id):
-        self.track_id = new_track_id
-
-    # getters
-    def title(self):
-        return self.title
-
-    def track(self):
-        return self.track_number
-
-    def duration_seconds(self):
-        return self.duration
-
-    def lyrics(self):
-        return self.lyrics
-
-    def available(self):
-        return self.available
-
-    def track_id(self):
-        return self.track_id
