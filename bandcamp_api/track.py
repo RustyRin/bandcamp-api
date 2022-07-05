@@ -1,7 +1,7 @@
 '''
 Need to do
 '''
-from bandcampjson import BandcampJSON
+from .bandcampjson import BandcampJSON
 import requests
 import logging
 from bs4 import BeautifulSoup, FeatureNotFound

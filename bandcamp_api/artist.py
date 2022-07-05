@@ -3,7 +3,7 @@ import requests
 import logging
 import json
 
-from bandcampjson import BandcampJSON
+from .bandcampjson import BandcampJSON
 
 def get_soup(url, debugging: bool = False):
     header = {'User-Agent': f'bandcamp-api/0 (https://github.com/RustyRin/bandcamp-api)'}

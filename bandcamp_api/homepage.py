@@ -1,10 +1,9 @@
 import requests
 from bs4 import BeautifulSoup, FeatureNotFound
-from requests_html import HTMLSession, HTML
 import json
 import random
 import logging
-from bandcampjson import BandcampJSON
+from .bandcampjson import BandcampJSON
 from datetime import datetime
 import time
 
@@ -294,6 +293,8 @@ class SaleFeed():
                     item.type = 'album'
                 elif current_item['slug_type'] == 't':
                     item.type = 'track'
+                elif current_item['slug_type'] == 'b':
+                    item.type = 'discography'
                 else:
                     item.type = 'physical'
 

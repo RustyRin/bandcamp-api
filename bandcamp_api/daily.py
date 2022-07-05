@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup, FeatureNotFound
 import logging
 import json
-from bandcampjson import BandcampJSON
+from .bandcampjson import BandcampJSON
 from datetime import datetime
 import time
 

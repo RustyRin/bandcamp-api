@@ -1,4 +1,4 @@
-from bandcampapi import BandcampJSON
+from .bandcampjson import BandcampJSON
 from bs4 import BeautifulSoup, FeatureNotFound
 import requests
 import logging

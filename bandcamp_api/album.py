@@ -7,8 +7,8 @@ import time
 
 import logging
 
-from bandcampjson import BandcampJSON
-from track import Track
+from .bandcampjson import BandcampJSON
+from .track import Track
 
 class Album:
 
@@ -158,7 +158,7 @@ class Album:
                 try:
                     current_review['favorite_track'] = str(review['text'][1].split(": ")[1])
                 except:
-                    current_review['favorite_track'] = None
+                    current_review['favorite_track'] = ""
 
                 self.advanced['reviews'].append(current_review)
         except:

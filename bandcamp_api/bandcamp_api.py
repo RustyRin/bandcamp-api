@@ -6,15 +6,15 @@ import requests
 from bs4 import BeautifulSoup
 from bs4 import FeatureNotFound
 
-from bandcampjson import BandcampJSON
-from album import Album
-from artist import Artist
-from label import Label
-from daily import Daily, Story
-from homepage import NewAndNotable, Charts, SaleFeed, BandcampWeekly
-from genres import get_main_genres, get_subgenres
-from search import search_artists, search_albums, search_tracks, search_fans
-from track import Track
+from .bandcampjson import BandcampJSON
+from .album import Album
+from .artist import Artist
+from .label import Label
+from .daily import Daily, Story
+from .homepage import NewAndNotable, Charts, SaleFeed, BandcampWeekly
+from .genres import get_main_genres, get_subgenres
+from .search import search_artists, search_albums, search_tracks, search_fans
+from .track import Track
 
 def get_json(self, url, debugging: bool = False):
     try:
@@ -93,7 +93,7 @@ class Bandcamp:
         return get_subgenres(main_genre=main_genre)
 
     def charts( self, main_genre: str = "", subgenre: str = "", sort: str = "", format: str = "", page: int = 0):
-        """Returns a list of """
+        """Returns a list of ChartAlbum Objects"""
         return Charts(main_genre=main_genre, subgenre=subgenre, sort=sort, format=format, page=page)
 
     def sales_feed(self):
