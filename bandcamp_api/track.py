@@ -96,9 +96,13 @@ class Track:
 
             self.artist_title = page_json['byArtist']['name']
             self.artist_url = page_json['byArtist']['@id']
-
-            self.album_title = page_json['inAlbum']['name']
-            self.album_url = page_json['inAlbum']['@id']
+            try:
+                self.album_title = page_json['inAlbum']['name']
+                self.album_url = page_json['inAlbum']['@id']
+            except:
+                # its a single
+                self.album_title = ""
+                self.album_url = page_json['url']
 
             self.track_url = track_url
 
@@ -143,3 +147,5 @@ class Track:
                 self.price['amount'] = page_json['inAlbum']['albumRelease'][0]['offers']['price']
 
             self.album_art_url = page_json['image'].split('_')[0] + '_0.jpg'
+
+Track(track_url="https://thesaxophonesus.bandcamp.com/track/take-my-fantasy-maston-remix?label=609867351&tab=music")
