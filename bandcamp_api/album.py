@@ -119,8 +119,10 @@ class Album:
 
 
         # doing the "advanced"
-
-        self.advanced['copyright'] = page_json['copyrightNotice']
+        try:
+            self.advanced['copyright'] = page_json['copyrightNotice']
+        except:
+            self.advanced['copyright'] = ""
 
         try:
             self.date_last_modified = datetime.strptime(page_json['dateModified'], '%d %b %Y %H:%M:%S %Z')
