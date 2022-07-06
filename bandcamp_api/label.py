@@ -67,8 +67,7 @@ class Label:
 
         for artist in artists:
             band = {}
-
-            band['name'] = artist.find("div", {"class": "artists-grid-name"}).get_text()
+            band['name'] = artist.text
             band['name'] = ' '.join(band['name'].split())
 
             band['location'] = artist.find("div", {"class": "artists-grid-location secondaryText"}).get_text()
@@ -89,19 +88,22 @@ class Label:
             return None
         
         try:
-            soup = BeautifulSoup(response.text, "lxml")
+            soup = BeautifulSoup(response.text, "html5lib")
         except FeatureNotFound:
             soup = BeautifulSoup(response.text, "html.parser")
 
-        albums = soup.find("ol", {"class": "music-grid"})
+        albums = soup.find("ol", {"id": "music-grid"})
         albums = albums.find_all("li")
 
         for album in albums:
 
             current_album = {}
 
-            current_album["artist"] = album.find("span", {'class': "artist-override"}).get_text()
-            current_album['artist'] = ' '.join(current_album['artist'].split())
+            try:
+                current_album["artist"] = album.find('span', {"class": "artist-override"}).text
+                current_album['artist'] = ' '.join(current_album['artist'].split())
+            except:
+                current_album['artist'] = ''
 
 
             current_album['title'] = album.find("p", {"class": "title"}).get_text().replace(current_album['artist'], "")
@@ -127,4 +129,3 @@ class Label:
 
         self.profile_picture_url = soup.find('div', {'id': "rightColumn"})
         self.profile_picture_url = self.profile_picture_url.find('div', {"id": "bio-container"})
-
