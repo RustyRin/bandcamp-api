@@ -116,8 +116,11 @@ class Album:
         except:
             self.date_published = 0
 
-        self.price['amount'] = float(page_json["current"]["minimum_price"])
-        self.price['currency'] = page_json['albumRelease'][0]['offers']['priceCurrency']
+        try:
+            self.price['amount'] = float(page_json["current"]["minimum_price"])
+            self.price['currency'] = page_json['albumRelease'][0]['offers']['priceCurrency']
+        except:
+            self.price = None
 
         try:
             self.preorder = bool(page_json['album_is_preorder'])
