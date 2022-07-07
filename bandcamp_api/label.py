@@ -75,7 +75,10 @@ class Label:
             try:
                 band["picture"] = artist.find("img").get('data-original').split('_')[0] + '_0.jpg'
             except:
-                band["picture"] = artist.find("img").get('src').split('_')[0] + '_0.jpg'
+                try:
+                    band["picture"] = artist.find("img").get('src').split('_')[0] + '_0.jpg'
+                except:
+                    band["picture"] = ""
 
             band["url"] = artist.find("a").get('href')
 
