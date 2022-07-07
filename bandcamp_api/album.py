@@ -12,7 +12,7 @@ from .track import Track
 
 class Album:
 
-    def __init__(self, album_url, debugging: bool = False):
+    def __init__(self, album_url, debugging: bool = False, skip_track_scrape: bool = False):
         self.album_title = ""
         self.artist_title = ""
         self.tracks = []
@@ -77,12 +77,19 @@ class Album:
         else:
             self.artist_url = page_json['url'].rpartition('/album')[0]
 
-        for trackjson in page_json['trackinfo']:
-            try:
-                track = Track(str(self.artist_url + trackjson['title_link']))
-                self.tracks.append(track)
-            except:
-                pass
+        if skip_track_scrape == False:
+            for trackjson in page_json['trackinfo']:
+                try:
+                    track = Track(str(self.artist_url + trackjson['title_link']))
+                    self.tracks.append(track)
+                except:
+                    pass
+        else: 
+            for trackjson in page_json['trackinfo']:
+                try:
+                    self.tracks.append(str(self.artist_url + trackjson['title_link']))
+                except:
+                    pass
 
         self.all_songs_available = self.are_all_songs_available(page_json['trackinfo'])
 
