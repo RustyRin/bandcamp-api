@@ -134,7 +134,10 @@ class Album:
         self.advanced['ids']['album_id'] = page_json['id']
         self.advanced['ids']['art_id'] = page_json['current']['art_id']
         self.advanced['ids']['seller_id'] = page_json['current']['selling_band_id']
-        self.advanced['featured_track'] = page_json['additionalProperty'][1]["value"]
+        try:
+            self.advanced['featured_track'] = page_json['additionalProperty'][1]["value"]
+        except:
+            self.advanced['featured_track'] = 0
 
         if page_json['current']['require_email'] != None:
             self.advanced['email_required'] = page_json['current']['require_email']
