@@ -42,9 +42,9 @@ class Bandcamp:
         self.soup = None
         self.tracks = None
 
-    def get_album(self, album_url):
+    def get_album(self, album_url, skip_track_scrape: bool = False):
         """Returns information for a given album URL"""
-        return Album(album_url=album_url)
+        return Album(album_url=album_url, skip_track_scrape=skip_track_scrape)
 
     def get_track(self, track_url):
         """Returns information for a given track URL"""
