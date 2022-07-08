@@ -95,7 +95,13 @@ class Track:
             self.duration_seconds = track_json['duration']
 
             self.artist_title = page_json['byArtist']['name']
-            self.artist_url = page_json['byArtist']['@id']
+
+            try:
+                self.artist_url = page_json['byArtist']['@id']
+            except:
+                # ther is no artist url, so its link is the publisher link
+                self.artist_url = page_json['publisher']['@id']
+
             try:
                 self.album_title = page_json['inAlbum']['name']
                 self.album_url = page_json['inAlbum']['@id']
@@ -147,5 +153,3 @@ class Track:
                 self.price['amount'] = page_json['inAlbum']['albumRelease'][0]['offers']['price']
 
             self.album_art_url = page_json['image'].split('_')[0] + '_0.jpg'
-
-Track(track_url="https://thesaxophonesus.bandcamp.com/track/take-my-fantasy-maston-remix?label=609867351&tab=music")
