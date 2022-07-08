@@ -138,6 +138,14 @@ class Artist:
         soup = get_soup(self.artist_url)
 
         soup = soup.find('ol', {'id': "music-grid"})
+
+        if 'track' in artist_url:
+            base_link = artist_url.rpartition('/track/')[0]
+        elif '/album/' in artist_url:
+            base_link = artist_url.rpartition('/album/')[0]
+        else:
+            base_link = artist_url
+
         try:
             album_links = soup.find_all('a')
             for link in album_links:
@@ -148,10 +156,3 @@ class Artist:
             # in the future, this should be an actual
             # album link, but this should be fine
             self.album_urls = [artist_url]
-
-        if 'track' in artist_url:
-            base_link = artist_url.rpartition('/track/')[0]
-        elif '/album/' in artist_url:
-            base_link = artist_url.rpartition('/album/')[0]
-        else:
-            base_link = artist_url
