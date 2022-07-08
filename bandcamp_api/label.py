@@ -57,10 +57,13 @@ class Label:
 
         self.bio = soup.find("p", {"id": "bio-text"}).get_text()
 
-        links = soup.find("ol", {"id": "band-links"})
-        links = links.find_all("a")
-        for link in links:
-            self.links.append(link.get('href'))
+        try:
+            links = soup.find("ol", {"id": "band-links"})
+            links = links.find_all("a")
+            for link in links:
+                self.links.append(link.get('href'))
+        except:
+            pass
 
         artists = soup.find("div", {"class": "leftMiddleColumns"})
         artists = artists.find_all("li")
