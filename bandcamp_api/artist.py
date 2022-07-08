@@ -138,7 +138,16 @@ class Artist:
         soup = get_soup(self.artist_url)
 
         soup = soup.find('ol', {'id': "music-grid"})
-        album_links = soup.find_all('a')
+        try:
+            album_links = soup.find_all('a')
+            for link in album_links:
+                self.album_urls.append(base_link + link.get('href'))
+        except AttributeError:
+            # there is only one album by this artist
+            # thus is is just showing the album page
+            # in the future, this should be an actual
+            # album link, but this should be fine
+            album_links = [artist_url]
 
         if 'track' in artist_url:
             base_link = artist_url.rpartition('/track/')[0]
@@ -146,6 +155,3 @@ class Artist:
             base_link = artist_url.rpartition('/album/')[0]
         else:
             base_link = artist_url
-
-        for link in album_links:
-            self.album_urls.append(base_link + link.get('href'))
