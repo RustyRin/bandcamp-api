@@ -142,7 +142,7 @@ class Artist:
             album_links = soup.find_all('a')
             for link in album_links:
                 self.album_urls.append(base_link + link.get('href'))
-        except AttributeError:
+        except:
             # there is only one album by this artist
             # thus is is just showing the album page
             # in the future, this should be an actual
