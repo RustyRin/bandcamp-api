@@ -147,7 +147,7 @@ class Artist:
             # thus is is just showing the album page
             # in the future, this should be an actual
             # album link, but this should be fine
-            album_links = [artist_url]
+            self.album_urls = [artist_url]
 
         if 'track' in artist_url:
             base_link = artist_url.rpartition('/track/')[0]
