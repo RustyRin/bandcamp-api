@@ -1,212 +1,172 @@
 import requests
-from bs4 import BeautifulSoup
-from datetime import datetime
-import time
-
-def clean_string(string):
-    return ' '.join(string.split())
-
-def search_artists(search_string: str):
-    link = "https://bandcamp.com/search?q=" + search_string + '&item_type=b'
-    try:
-        response = requests.get(link)
-    except requests.exceptions.MissingSchema as err:
-        return err
-
-    try:
-        soup = BeautifulSoup(response.tex, "lxml")
-    except:
-        soup = BeautifulSoup(response.text, "html.parser")
-
-    results = soup.find('ul', {"class": "result-items"})
-    things_to_return = []
-
-    for item in results.find_all("li"):
-        band = ArtistResults()
-        band.artist_title = ' '.join(item.find('div', {"class": "heading"}).text.split())
-        
-        try:
-            band.location = ' '.join(item.find('div', {"class": "subhead"}).text.split())
-        except:
-            band.location = ""
-
-        try:
-            band.genre = ' '.join(item.find("div", {"class": "genre"}).text.split())
-        except:
-            band.genre = ''
-
-        try:
-            band.tags = ' '.join(item.find('div', {'class': "tags data-search"}).text.split())
-            band.tags = band.tags.split(": ")[1:]
-            band.tags = ' '.join(band.tags).split(', ')
-        except:
-            band.tags = []
-
-        try:
-            band.image_url = item.find('img').get('src').split('_')[0]
-            band.image_url = band.image_url + '_0.jpg'
-        except:
-            band.image = ""
-
-        band.artist_url = item.find('div', {'class': "itemurl"})
-        band.artist_url = band.artist_url.find('a').text
-        things_to_return.append(band)
-
-    return things_to_return
-
-def search_albums(search_string: str):
-    link = "https://bandcamp.com/search?q=" + search_string + '&item_type=a'
-    try:
-        response = requests.get(link)
-    except requests.exceptions.MissingSchema as err:
-        return err
-
-    try:
-        soup = BeautifulSoup(response.tex, "lxml")
-    except:
-        soup = BeautifulSoup(response.text, "html.parser")
-
-    results = soup.find('ul', {"class": "result-items"})
-    things_to_return = []
-
-    for item in results.find_all("li"):
-        album = AlbumResults()
-
-        album.album_title = clean_string(item.find('div', {"class": "heading"}).text)
-
-        album.artist_title = clean_string(item.find('div', {"class": "subhead"}).text[3:])
-
-        album.total_tracks = clean_string(item.find('div', {"class": "length"}).text)
-        album.total_tracks = int(''.join(album.total_tracks).split(' track')[0])
-
-        album.duration_seconds = int(item.find('div', {"class": 'length'}).text.split(', ')[1].split( )[0])*60
-
-        album.date_released = ' '.join(item.find('div', {'class': "released"}).text.split())[9:]
-        album.date_released = datetime.strptime(album.date_released, '%d %B %Y')
-        album.date_released = int(time.mktime(album.date_released.timetuple()))
-
-        album.album_url = clean_string(item.find('div', {"class": "itemurl"}).text)
-
-        album.tags = ' '.join(item.find('div', {'class': "tags data-search"}).text.split())
-        album.tags = album.tags.split(": ")[1:]
-        album.tags = ' '.join(album.tags).split(', ')
-
-        album.album_art_url = item.find('div', {"class": "art"})
-        album.album_art_url = album.album_art_url.find('img').get('src')[:-5] + '0.jpg'
-        
-        things_to_return.append(album)
-
-    return things_to_return
 
 
-def search_tracks(search_string: str):
-    link = "https://bandcamp.com/search?q=" + search_string + '&item_type=t'
-    try:
-        response = requests.get(link)
-    except requests.exceptions.MissingSchema:
-        None
-
-    try:
-        soup = BeautifulSoup(response.tex, "lxml")
-    except:
-        soup = BeautifulSoup(response.text, "html.parser")
-
-    results = soup.find('ul', {"class": "result-items"})
-    things_to_return = []
-
-    for item in results.find_all("li"):
-        track = TrackResults()
-
-        track.track_title = clean_string(item.find('div', {"class": "heading"}).text)
-
-        track.album_title = clean_string(item.find('div', {"class": "subhead"}).text).split(' by ')[0].replace('from ', '')
-        
-        track.artist_title = clean_string(item.find('div', {'class': "subhead"}).text).split('by ')[1]
-
-        track.date_released = ' '.join(item.find('div', {'class': "released"}).text.split())[9:]
-        track.date_released = datetime.strptime(track.date_released, '%d %B %Y')
-        track.date_released = int(time.mktime(track.date_released.timetuple()))
-
-        track.album_art_url = item.find('img').get('src').split('_')[0] +'_0.jpg'
-
-        track.track_url = clean_string(item.find('div', {'class': "itemurl"}).text)
-        
-        things_to_return.append(track)
-
-    return things_to_return
-
-def search_fans(search_string: str):
-    link = "https://bandcamp.com/search?q=" + search_string + '&item_type=f'
-    try:
-        response = requests.get(link)
-    except requests.exceptions.MissingSchema:
-        None
-
-    try:
-        soup = BeautifulSoup(response.tex, "lxml")
-    except:
-        soup = BeautifulSoup(response.text, "html.parser")
-
-    results = soup.find('ul', {"class": "result-items"})
-    things_to_return = []
-
-    for item in results.find_all("li"):
-        fan = FanResults()
-
-        fan.username = clean_string(item.find("div", {"class": "heading"}).text)
-        fan.fan_url = clean_string(item.find('div', {"class": "itemurl"}).text)
-
-        try:
-            fan.genre = clean_string(item.find('div', {"class": "genre"}).text).split(': ')[1]
-        except:
-            fan.genre = ""
-
-        try:
-            fan.profile_picture_url = clean_string(item.find('img').get('src')).split('_')[0]+'_0.jpg'
-        except:
-            fan.profile_picture_url = ""
-
-        things_to_return.append(fan)
-
-    return things_to_return
-
-
-class ArtistResults():
+class SearchResultsItemArtist:
 
     def __init__(self):
+        self.type = 'artist'
+        self.artist_id = 0
+        self.art_id = 0
+        self.image_id = 0
         self.artist_title = ""
         self.location = ""
-        self.genre = ""
+        self.is_label = False
         self.tags = []
         self.image_url = ""
+        self.genre = ""
+        self.part = ""
         self.artist_url = ""
 
-class AlbumResults():
+
+class SearchResultsItemAlbum:
 
     def __init__(self):
+        self.type = "album"
+        self.album_id = 0
+        self.art_id = 0
+        self.image_id = 0
         self.album_title = ""
+        self.artist_id = 0
         self.artist_title = ""
-        self.total_tracks = 0
-        self.duration_seconds = 0
-        self.date_released = 0
+        self.image_url = ""
+        self.part = ""
         self.album_url = ""
-        self.tags = []
-        self.album_art_url = ""
+        self.artist_url = ""
 
-class TrackResults():
+
+class SearchResultsItemTrack:
 
     def __init__(self):
+        self.type = "track"
+        self.track_id = 0
+        self.art_id = 0
+        self.image_id = 0
         self.track_title = ""
-        self.album_title = ""
+        self.artist_id = 0
         self.artist_title = ""
-        self.date_released = 0
-        self.album_art_url = ""
+        self.album_title = ""
+        self.image_url = ""
+        self.album_id = ""
+        self.part = ""
         self.track_url = ""
+        self.artist_url = ""
 
-class FanResults():
+
+class SearchResultsItemFan:
 
     def __init__(self):
-        self.username = ""
-        self.fan_url = ""
-        self.genre = ""
-        self.profile_picture_url = ""
+        self.type = "fan"
+        self.fan_id = 0
+        self.art_id = 0
+        self.image_id = 0
+        self.fan_name = ""
+        self.fan_username = ""
+        self.collection_size = 0
+        self.fan_genre = ""
+        self.fan_image = ""
+        self.fan_image_id = ""
+        self.part = ""
+        self.url = ""
+
+
+def search(search_string: str = ""):
+    # I got this api url from the iOS app
+    # needs a way of removing characters
+    # that will screw up an url
+    # keep url safe characters
+
+    response = requests.get(
+        "https://bandcamp.com/api/fuzzysearch/2/app_autocomplete?q=" + search_string + "&param_with_locations=true")
+
+    results = response.json()['results']
+
+    return_results = []
+
+    for item in results:
+        # going item by item
+        if item['type'] == 'b':
+            # For bands and record labels
+            results_object = SearchResultsItemArtist()
+            results_object.artist_id = item['id']
+            results_object.art_id = item['art_id']
+            results_object.image_id = item['img_id']
+            results_object.artist_title = item['name']
+            results_object.location = item['location']
+            results_object.is_label = item['is_label']
+
+            for tag in item['tag_names']:
+                results_object.tags.append(tag)
+
+            results_object.image_url = "https://f4.bcbits.com/img/0000" + str(results_object.image_id) + '_0.png'
+
+            # I have seen some bands with no main genre
+            try:
+                results_object.genre = item['genre_name']
+            except KeyError:
+                pass
+
+            # no idea what "part" is
+            # it seems to always be "z"
+            try:
+                results_object.part = item['part']
+            except KeyError:
+                pass
+
+            results_object.artist_url = item['url']
+
+            return_results.append(results_object)
+
+        elif item['type'] == 'a':
+            # album
+            results_object = SearchResultsItemAlbum()
+            results_object.album_id = item['id']
+            results_object.art_id = item['art_id']
+            results_object.image_id = item['img_id']
+            results_object.album_title = item['name']
+            results_object.artist_id = item['band_id']
+            results_object.artist_title = item['band_name']
+            results_object.image_url = "https://f4.bcbits.com/img/a" + str(item['art_id']) + '_0.png'
+            results_object.part = item['part']
+
+            # the url given if weird
+            # it is in the style of https://bandname.bandcamp.comhttps://bandname.bandcamp.com/album/albumname
+            # this should split it
+            results_object.artist_url = 'https' + item['url'].split('https')[1]
+            results_object.album_url = 'https' + item['url'].split('https')[2]
+
+            return_results.append(results_object)
+
+        elif item['type'] == 't':
+            # track
+            results_object = SearchResultsItemTrack()
+            results_object.track_id = item['id']
+            results_object.art_id = item['art_id']
+            results_object.track_title = item['name']
+            results_object.artist_id = item['band_id']
+            results_object.artist_title = item['band_name']
+            results_object.album_title = item['album_name']
+            results_object.album_id = item['album_id']
+            results_object.image_url = "https://f4.bcbits.com/img/a" + str(item['art_id']) + "_0.png"
+            results_object.part = item['part']
+            results_object.artist_url = 'https' + item['url'].split('https')[1]
+            results_object.track_url = 'https' + item['url'].split('https')[2]
+
+            return_results.append(results_object)
+
+        elif item['type'] == "f":
+            # fan
+            results_object = SearchResultsItemFan()
+            results_object.fan_id = item['id']
+            results_object.art_id = item['art_id']
+            results_object.image_id = item['img_id']
+            results_object.fan_name = item['name']
+            results_object.fan_username = item['username']
+            results_object.collection_size = item['collection_size']
+            results_object.fan_genre = item['genre_name']
+            results_object.fan_image = "https://f4.bcbits.com/img/" + str(item['img_id']) + '_0.png'
+            results_object.part = item['part']
+            results_object.url = item['url']
+
+            return_results.append(results_object)
+
+    return return_results

@@ -13,7 +13,7 @@ from .label import Label
 from .daily import Daily, Story
 from .homepage import NewAndNotable, Charts, SaleFeed, BandcampWeekly
 from .genres import get_main_genres, get_subgenres
-from .search import search_artists, search_albums, search_tracks, search_fans
+from .search import search
 from .track import Track
 
 def get_json(self, url, debugging: bool = False):
@@ -117,19 +117,23 @@ class Bandcamp:
 
     #def get_featured_livestreams(self):
         """Returns a list of Bandcamp featured livestreams"""
-        
-    def search_artist(self, search_string: str = ""):
-        """Search Bandcamp for an artist"""
-        return search_artists(search_string=search_string)
-    
-    def search_albums(self, search_string: str = ""):
-        """Search Bandcamp for an album"""
-        return search_albums(search_string=search_string)
 
-    def search_tracks(self, search_string: str = ""):
-        """Search Bandcamp for a track"""
-        return search_tracks(search_string=search_string)
+    def search(self, search_string: str = ""):
+        """Fuzzy searches Bandcamp"""
+        return search(search_string=search_string)
 
-    def search_fans(self, search_string: str):
-        """Search Bandcamp for a fan"""
-        return search_fans(search_string=search_string)
+    # def search_artist(self, search_string: str = ""):
+    #    """Search Bandcamp for an artist"""
+    #    return search_artists(search_string=search_string)
+
+    #def search_albums(self, search_string: str = ""):
+    #    """Search Bandcamp for an album"""
+    #    return search_albums(search_string=search_string)
+
+    #def search_tracks(self, search_string: str = ""):
+    #    """Search Bandcamp for a track"""
+    #    return search_tracks(search_string=search_string)
+
+    #def search_fans(self, search_string: str):
+    #    """Search Bandcamp for a fan"""
+    #    return search_fans(search_string=search_string)
