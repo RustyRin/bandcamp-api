@@ -16,6 +16,7 @@ class SearchResultsItemArtist:
         self.genre = ""
         self.part = ""
         self.artist_url = ""
+        self.url = ""
 
 
 class SearchResultsItemAlbum:
@@ -32,6 +33,7 @@ class SearchResultsItemAlbum:
         self.part = ""
         self.album_url = ""
         self.artist_url = ""
+        self.url = ""
 
 
 class SearchResultsItemTrack:
@@ -50,6 +52,7 @@ class SearchResultsItemTrack:
         self.part = ""
         self.track_url = ""
         self.artist_url = ""
+        self.url = ""
 
 
 class SearchResultsItemFan:
@@ -113,6 +116,7 @@ def search(search_string: str = ""):
                 pass
 
             results_object.artist_url = item['url']
+            results_object.url = results_object.artist_url
 
             return_results.append(results_object)
 
@@ -133,6 +137,7 @@ def search(search_string: str = ""):
             # this should split it
             results_object.artist_url = 'https' + item['url'].split('https')[1]
             results_object.album_url = 'https' + item['url'].split('https')[2]
+            results_object.url = results_object.album_url
 
             return_results.append(results_object)
 
@@ -150,6 +155,7 @@ def search(search_string: str = ""):
             results_object.part = item['part']
             results_object.artist_url = 'https' + item['url'].split('https')[1]
             results_object.track_url = 'https' + item['url'].split('https')[2]
+            results_object.url = results_object.track_url
 
             return_results.append(results_object)
 
