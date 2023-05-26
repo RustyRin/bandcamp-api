@@ -50,9 +50,20 @@ class Bandcamp:
         """Returns information for a given track URL"""
         return Track(track_url=track_url)
 
-    def get_artist(self, artist_url):
+    def get_artist(self, artist_url) -> Artist|None:
         """Returns information for a given artist URL"""
-        return Artist(artist_url=artist_url)
+        results = search(search_string=artist_url.split(".")[0].split("//")[1])
+
+        if '/album/' in artist_url:
+            artist_url = artist_url.split('/album')[0]
+        elif '/track/' in artist_url:
+            artist_url = artist_url.split('/track')[0]
+
+        for item in results:
+            if item.type == "artist" and item.url == artist_url.rstrip("//"):
+                return Artist(artist_id=item.artist_id)
+
+        return None
 
     def get_label(self, label_url: str):
         """Returns information for a given label URL"""
