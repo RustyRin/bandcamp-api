@@ -36,19 +36,39 @@ def get_json(self, url, debugging: bool = False):
 
     return page_json
 
+
 class Bandcamp:
     def __init__(self):
         self.headers = {'User-Agent': 'bandcamp-api/0 (https://github.com/RustyRin/bandcamp-api)'}
         self.soup = None
         self.tracks = None
 
-    def get_album(self, album_url, skip_track_scrape: bool = False):
+    def get_album(self, album_url: str, advanced: bool = False) -> Album | Track:
         """Returns information for a given album URL"""
-        return Album(album_url=album_url, skip_track_scrape=skip_track_scrape)
+        # split by /album/
+        # take first
 
-    def get_track(self, track_url):
+        if '/album/' in album_url:
+            search_term = album_url.split('/album/')[1]
+        elif '/track/' in album_url:
+            search_term = album_url.split('/track/')[1]
+
+        results = search(search_string=search_term.rstrip("//"))
+
+        for item in results:
+            if item.url == album_url.rstrip('//'):
+                return Album(album_id=item.album_id, artist_id=item.artist_id, advanced=advanced)
+
+    def get_track(self, track_url: str, advanced: bool = False) -> Track:
         """Returns information for a given track URL"""
-        return Track(track_url=track_url)
+
+        search_term = track_url.split('/track/')[1]
+
+        results = search(search_string=search_term.rstrip("//"))
+
+        for item in results:
+            if item.url == track_url.rstrip("//"):
+                return Track(artist_id=item.artist_id, track_id=item.track_id, advanced=advanced)
 
     def get_artist(self, artist_url) -> Artist|None:
         """Returns information for a given artist URL"""
