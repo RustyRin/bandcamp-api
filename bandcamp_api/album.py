@@ -12,7 +12,7 @@ from .track import Track
 
 
 class Album:
-    def __init__(self, album_id: str | int, artist_id: str | int, advanced=False):
+    def __init__(self, album_id: str | int, artist_id: str | int, advanced: bool = False):
         # base album information
         self.album_title = ""
         self.album_about = ""
@@ -41,39 +41,42 @@ class Album:
         self.require_email = None
         self.tags = []
         self.total_tracks = 0
-        self.visible_tracks_ids = []
+        self.tracks = []
 
         self.artist_title = ""
         self.artist_id = 0
         self.artist_url = ""
 
         self.type = "album"
-
         response = requests.get(
             url="https://bandcamp.com/api/mobile/25/tralbum_details?band_id=" + str(artist_id) +
             "&tralbum_id=" + str(album_id) + "&tralbum_type=a"
         )
         result = response.json()
 
-        # needs to have a fallback for track albums
-        # bandcamp just sees them as tracks, but im treating as releases
+        # if it throws an error, that means try as a single
         try:
             if "No such tralbum for band" in result['error_message']:
-                print("WARNING: Could not load album, trying to load as a track")
-                return
+                response = requests.get(
+                    url="https://bandcamp.com/api/mobile/25/tralbum_details?band_id=" + str(artist_id) +
+                        "&tralbum_id=" + str(album_id) + "&tralbum_type=t"
+                )
+                result = response.json()
+                self.type = "album-single"
         except KeyError:
             pass
 
         # general info
         try:
             self.album_title = result['album_title']
+            if self.album_title is None:
+                self.album_title = result['title']
         except KeyError:
             # good chance it is a single
             # parse though track class
             print("WARNING: Could not load album, trying to load as a track...")
+            self.type = "track"
             return
-
-        self.type = "album"
 
         try:
             self.album_about = result['about']
@@ -176,12 +179,6 @@ class Album:
             pass
 
         try:
-            for track in result['tracks']:
-                self.visible_tracks_ids.append(track['track_id'])
-        except KeyError:
-            pass
-
-        try:
             self.artist_title = result['tralbum_artist']
         except KeyError:
             pass
@@ -195,6 +192,9 @@ class Album:
             self.artist_url = self.album_url.split("album")[0]
         except KeyError:
             pass
+
+        for track in result['tracks']:
+            self.tracks.append(Track(artist_id=self.artist_id, track_id=track['track_id'], advanced=advanced))
 
         # advanced scraping
         # the api as i understand it, does not have a way for things like copyright, reviews, supporters
@@ -254,12 +254,11 @@ class Album:
             try:
                 for supporter in page_json['sponsor']:
                     try:
-                        current_supporter = {}
-
-                        current_supporter['username'] = supporter['name']
-                        current_supporter['profile_url'] = supporter['url']
-                        current_supporter['profile_picture'] = supporter['image'].split('_')[0] + '_0.jpg'
-
+                        current_supporter = {
+                            'username': supporter['name'],
+                            'profile_url': supporter['url'],
+                            'profile_picture': supporter['image'].split('_')[0] + '_0.jpg'
+                        }
                         self.supporters.append(current_supporter)
                     except:
                         pass
@@ -274,7 +273,6 @@ def get_album(album_id: int = None):
         url="https://bandcamp.com/api/mobile/25/tralbum_details",
         headers={"tralbum_id": str(id)}
     )
-    print(response)
 
 
 def get_json(url, debugging: bool = False):
