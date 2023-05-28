@@ -15,7 +15,7 @@ bc = Bandcamp()
 
 album = bc.get_album(album_url="https://c418.bandcamp.com/album/minecraft-volume-alpha")
 
-print("Album title: " + album.album_title)
+print("Album title:", album.album_title)
 ```
 
 For more information on the functions available see the [functions wiki](https://github.com/RustyRin/bandcamp-api/wiki/Functions) or the [object wiki](https://github.com/RustyRin/bandcamp-api/wiki/Bandcamp-api-Objects)
