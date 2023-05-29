@@ -89,7 +89,7 @@ class Bandcamp:
 
         return None
 
-    def get_label(self, label_url: str):
+    def get_label(self, label_url: str) -> Label | None:
         """Returns information for a given label URL"""
         return Label(label_url=label_url)
 
