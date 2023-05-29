@@ -70,7 +70,7 @@ class Bandcamp:
             if item.url == track_url.rstrip("//"):
                 return Track(artist_id=item.artist_id, track_id=item.track_id, advanced=advanced)
 
-    def get_artist(self, artist_url) -> Artist|None:
+    def get_artist(self, artist_url) -> Artist | Label | None:
         """Returns information for a given artist URL"""
         results = search(search_string=artist_url.split(".")[0].split("//")[1])
 
