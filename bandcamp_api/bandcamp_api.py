@@ -91,7 +91,18 @@ class Bandcamp:
 
     def get_label(self, label_url: str) -> Label | None:
         """Returns information for a given label URL"""
-        return Label(label_url=label_url)
+        results = search(search_string=label_url.split(".")[0].split("//")[1])
+
+        if '/album/' in label_url:
+            label_url = label_url.split('/album')[0]
+        elif '/track/' in label_url:
+            label_url = label_url.split('/track')[0]
+
+        for item in results:
+            if item.type == "artist" and item.url == label_url.rstrip("//") and item.is_label:
+                return Label(label_id=item.artist_id)
+
+        return None
 
     def daily_latest(self, num_to_get: int):
         """Retuns the latest Bandcamp Daily stories. Warning this is very slow."""
