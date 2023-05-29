@@ -97,8 +97,11 @@ def search(search_string: str = ""):
             results_object.location = item['location']
             results_object.is_label = item['is_label']
 
-            for tag in item['tag_names']:
-                results_object.tags.append(tag)
+            try:
+                for tag in item['tag_names']:
+                    results_object.tags.append(tag)
+            except TypeError:
+                pass
 
             results_object.image_url = "https://f4.bcbits.com/img/0000" + str(results_object.image_id) + '_0.png'
 
