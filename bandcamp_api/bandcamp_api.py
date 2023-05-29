@@ -97,7 +97,7 @@ class Bandcamp:
         """Retuns the latest Bandcamp Daily stories. Warning this is very slow."""
         return Daily().search_latest(num_to_get=num_to_get)
 
-    def daily_best_of(self,section_slug: str, num_to_get: int):
+    def daily_best_of(self, section_slug: str, num_to_get: int):
         """Returns a list of Bandcamp Daily stories for a given Best Of section"""
         return Daily().search_best_of(section_slug=section_slug, num_to_get=num_to_get)
 
