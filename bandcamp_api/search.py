@@ -89,6 +89,9 @@ def search(search_string: str = ""):
         # going item by item
         if item['type'] == 'b':
             # For bands and record labels
+            # need to make a try catch for labels
+            # normal bands do not have "artists" element
+            # if it does have it, normal artist, if it does, use label object
             results_object = SearchResultsItemArtist()
             results_object.artist_id = item['id']
             results_object.art_id = item['art_id']
