@@ -81,7 +81,11 @@ class Bandcamp:
 
         for item in results:
             if item.type == "artist" and item.url == artist_url.rstrip("//"):
-                return Artist(artist_id=item.artist_id)
+                # checking if it is a label, if it is, use label object
+                if item.is_label:
+                    return Label(label_id=item.artist_id)
+                else:
+                    return Artist(artist_id=item.artist_id)
 
         return None
 
