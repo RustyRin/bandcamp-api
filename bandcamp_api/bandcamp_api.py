@@ -69,13 +69,16 @@ class Bandcamp:
                   advanced: bool = False) -> Track:
         """Returns information for a given track URL/ IDs"""
 
-        search_term = track_url.split('/track/')[1]
+        if track_id is not None and artist_id is not None:
+            return Track(artist_id=artist_id, track_id=track_id, advanced=advanced)
+        else:
+            search_term = track_url.split('/track/')[1]
 
-        results = search(search_string=search_term.rstrip("//"))
+            results = search(search_string=search_term.rstrip("//"))
 
-        for item in results:
-            if item.url == track_url.rstrip("//"):
-                return Track(artist_id=item.artist_id, track_id=item.track_id, advanced=advanced)
+            for item in results:
+                if item.url == track_url.rstrip("//"):
+                    return Track(artist_id=item.artist_id, track_id=item.track_id, advanced=advanced)
 
     def get_artist(self, artist_url) -> Artist | Label | None:
         """Returns information for a given artist URL"""
