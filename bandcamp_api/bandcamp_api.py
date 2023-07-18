@@ -63,8 +63,11 @@ class Bandcamp:
             if item.url == album_url.rstrip('//'):
                 return Album(album_id=item.album_id, artist_id=item.artist_id, advanced=advanced)
 
-    def get_track(self, track_url: str, advanced: bool = False) -> Track:
-        """Returns information for a given track URL"""
+    def get_track(self, track_url: str = None,
+                  track_id: int | str = None,
+                  artist_id: int | str = None,
+                  advanced: bool = False) -> Track:
+        """Returns information for a given track URL/ IDs"""
 
         search_term = track_url.split('/track/')[1]
 
