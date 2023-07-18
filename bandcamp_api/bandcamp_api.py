@@ -47,9 +47,7 @@ class Bandcamp:
                   album_id: int | str = None,
                   artist_id: int | str = None,
                   advanced: bool = False) -> Album | Track:
-        """Returns information for a given album URL"""
-        # split by /album/
-        # take first
+        """Returns information for a given album URL/ IDs"""
 
         if album_id is not None and artist_id is not None:
             return Album(album_id=album_id, artist_id=artist_id, advanced=advanced)
