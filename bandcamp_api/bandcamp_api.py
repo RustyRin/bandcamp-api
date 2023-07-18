@@ -84,6 +84,8 @@ class Bandcamp:
             artist_url = artist_url.split('/album')[0]
         elif '/track/' in artist_url:
             artist_url = artist_url.split('/track')[0]
+        elif '/music' in artist_url:
+            artist_url = artist_url.split('/music')[0]
 
         for item in results:
             if item.type == "artist" and item.url == artist_url.rstrip("//"):
