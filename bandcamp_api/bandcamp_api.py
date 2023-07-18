@@ -43,17 +43,23 @@ class Bandcamp:
         self.soup = None
         self.tracks = None
 
-    def get_album(self, album_url: str, advanced: bool = False) -> Album | Track:
+    def get_album(self, album_url: str = None,
+                  album_id: int | str = None,
+                  artist_id: int | str = None,
+                  advanced: bool = False) -> Album | Track:
         """Returns information for a given album URL"""
         # split by /album/
         # take first
 
-        if '/album/' in album_url:
-            search_term = album_url.split('/album/')[1]
-        elif '/track/' in album_url:
-            search_term = album_url.split('/track/')[1]
+        if album_id is not None and artist_id is not None:
+            return Album(album_id=album_id, artist_id=artist_id, advanced=advanced)
+        else:
+            if '/album/' in album_url:
+                search_term = album_url.split('/album/')[1]
+            elif '/track/' in album_url:
+                search_term = album_url.split('/track/')[1]
 
-        results = search(search_string=search_term.rstrip("//"))
+            results = search(search_string=search_term.rstrip("//"))
 
         for item in results:
             if item.url == album_url.rstrip('//'):
