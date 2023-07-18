@@ -33,6 +33,7 @@ def get_json(url, debugging: bool = False):
 
     return page_json
 
+
 def get_current_new_and_notable_id():
     ping_size = 7          # how many guesses should be do per get/ping, max 60
     check_width = 7        # how many future IDs should be checked if they exist
@@ -50,7 +51,6 @@ def get_current_new_and_notable_id():
             currently_guessing = random.sample(range(highest_known, lowest_unknown), ping_size)
         except:
             currently_guessing = random.sample(range(highest_known - check_width, lowest_unknown + check_width), ping_size)
-        
 
         # get information
         id_string = ''
@@ -86,6 +86,7 @@ def get_current_new_and_notable_id():
                     lowest_unknown = id
 
     return latest_id
+
 
 class NewAndNotable():
 
@@ -132,6 +133,7 @@ class NewAndNotable():
 
             self.albums.append(album)
 
+
 class NewAndNotableAlbum():
     def __init__(self):
 
@@ -146,14 +148,14 @@ class NewAndNotableAlbum():
         self.advanced = {}
 
         
-class Charts():
-
-    def __init__(self, 
-                main_genre: str = "all", 
-                sort: str = "top", 
-                page: int = 0, 
-                format: str = 'all', 
-                subgenre: str = ""):
+class Charts:
+    def __init__(
+            self,
+            main_genre: str = "all",
+            sort: str = "top",
+            page: int = 0,
+            format: str = 'all',
+            subgenre: str = ""):
 
         self.albums = []
 
@@ -163,7 +165,7 @@ class Charts():
         if not sort:
             sort = 'top'
 
-        if page == None or not page:
+        if page is None or not page:
             page = 0
 
         if not format:
@@ -178,7 +180,7 @@ class Charts():
 
         arg_string += '&s=' + sort
 
-        if (main_genre) != 'all' and ('rec' not in sort):
+        if main_genre != 'all' and ('rec' not in sort):
             # can contain subgenre
             arg_string += '&t=' + subgenre
 
@@ -241,8 +243,8 @@ class Charts():
 
             self.albums.append(album)
 
-class ChartsAlbum():
 
+class ChartsAlbum:
     def __init__(self):
         self.album_artist = ""
         self.album_title = ""
@@ -254,8 +256,8 @@ class ChartsAlbum():
         self.featured_track = {}
         self.advanced = {}
 
-class SaleFeed():
 
+class SaleFeed:
     def __init__(self, time: int = 0):
 
         self.sold_time = 0.00000
@@ -307,23 +309,26 @@ class SaleFeed():
             self.purchases.append(bought_items)
 
         
-class Item():
+class Item:
     def __init__(self):
         self.price = {}
-            # paid
-            # price
-            # currency
+        # {
+        #   "price": 0.00,
+        #   "paid": 0.00,
+        #   "currency": "USD"
+        # }
         self.image_url = ""
 
         self.description = ""
 
         self.type = ""
-            # t for track
-            # p seems to be for physical
-            # a for album
-            # b is full disco
+        # t for track
+        # p seems to be for physical
+        # a for album
+        # b is full disco
 
         self.url = ""
+
 
 class BandcampWeekly():
 
@@ -428,6 +433,7 @@ class BandcampWeekly():
             self.tracks.append(track_object)
 
         return self
+
 
 class BandcampWeeklyTrack():
 

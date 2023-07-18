@@ -4,6 +4,7 @@ import requests
 import logging
 import json
 
+
 def get_json(url, debugging: bool = False):
 
         headers = {'User-Agent': f'bandcamp-api/0 (https://github.com/RustyRin/bandcamp-api)'}
@@ -27,6 +28,7 @@ def get_json(url, debugging: bool = False):
 
         return page_json
 
+
 def get_main_genres():
     try:
         page_json = get_json(url="https://intlanthem.bandcamp.com/album/in-these-times")
@@ -40,6 +42,7 @@ def get_main_genres():
         genres.append(genre_dict['value'])
 
     return genres
+
 
 def get_subgenres(main_genre: str):
 

@@ -10,257 +10,290 @@ import logging
 from .bandcampjson import BandcampJSON
 from .track import Track
 
-class Album:
 
-    def __init__(self, album_url, debugging: bool = False, skip_track_scrape: bool = False):
+class Album:
+    def __init__(self, album_id: str | int, artist_id: str | int, advanced: bool = False):
+        # base album information
         self.album_title = ""
-        self.artist_title = ""
-        self.tracks = []
+        self.album_about = ""
+        self.album_credits = ""
+        self.album_id = 0
+        self.art_id = 0
         self.art_url = ""
         self.album_url = ""
-        self.artist_url = ""
-        self.all_songs_available = False
-        self.price = {}
-        self.keywords = []
-        self.publisher_title = ""
-        self.preorder = False
+        self.date_released_unix = 0
 
-        # need to do
-        self.album_bio = ""
-
-        self.date_released = 0    # utc unixtime
-        self.date_published = 0  # utc unixtime
-        self.date_last_modified = 0
-
-        # extra, ignore
-        self.soup = None
-
-        # This stuff seems *minor* so I'm just
-        # going to use a dict, if this is a problem
-        # for you I'm sure you're smart enough to
-        # fix it or make it better
-        self.advanced = {
-            "copyright": "",
-            "ids": {
-                "artist_id": 0,
-                "album_id": 0,
-                "art_id": 0,
-                "seller_id": 0,
-            },
-            "featured_track": 0,
-            "email_required": False,
-            "reviews": [],
-            "supporters": []
+        # price
+        self.price = {
+            "currency": None,
+            "amount": None
         }
+        self.is_free = None
+        self.is_preorder = None
+        self.is_purchasable = None
+        self.is_set_price = None
+
+        # additional album info
+        self.is_digital = None
+        self.featured_track_id = 0
+        self.record_label_title = ""
+        self.record_label_id = 0
+        self.require_email = None
+        self.tags = []
+        self.total_tracks = 0
+        self.tracks = []
+
+        self.artist_title = ""
+        self.artist_id = 0
+        self.artist_url = ""
+
+        self.type = "album"
+        response = requests.get(
+            url="https://bandcamp.com/api/mobile/25/tralbum_details?band_id=" + str(artist_id) +
+            "&tralbum_id=" + str(album_id) + "&tralbum_type=a"
+        )
+        result = response.json()
+
+        # if it throws an error, that means try as a single
+        try:
+            if "No such tralbum for band" in result['error_message']:
+                response = requests.get(
+                    url="https://bandcamp.com/api/mobile/25/tralbum_details?band_id=" + str(artist_id) +
+                        "&tralbum_id=" + str(album_id) + "&tralbum_type=t"
+                )
+                result = response.json()
+                self.type = "album-single"
+        except KeyError:
+            pass
+
+        # general info
+        try:
+            self.album_title = result['album_title']
+            if self.album_title is None:
+                self.album_title = result['title']
+        except KeyError:
+            # good chance it is a single
+            # parse though track class
+            print("WARNING: Could not load album, trying to load as a track...")
+            self.type = "track"
+            return
 
         try:
-            page_json = self.get_json(url = album_url)
-
-        except Exception as err:
-            print(err)
-            raise AttributeError("Either the album URL given is either private, deleted or the link is malformed.")
-
-        self.artist_title = page_json['artist']
-        self.artist_title = ' '.join(self.artist_title.split())
-
-        try:
-            self.album_title = page_json['current']['title']
-            self.album_title = ' '.join(self.album_title.split())
-        except:
-            self.album_title = page_json['trackinfo'][0]['title']
-
-        self.album_url = album_url
-
-        # getting artist url
-        if 'track' in page_json['url']:
-            self.artist_url = page_json['url'].rpartition('/track/')[0]
-        else:
-            self.artist_url = page_json['url'].rpartition('/album')[0]
-
-        if skip_track_scrape == False:
-            for trackjson in page_json['trackinfo']:
-                try:
-                    track = Track(str(self.artist_url + trackjson['title_link']))
-                    self.tracks.append(track)
-                except:
-                    pass
-        else: 
-            for trackjson in page_json['trackinfo']:
-                try:
-                    self.tracks.append(str(self.artist_url + trackjson['title_link']))
-                except:
-                    pass
-
-        self.all_songs_available = self.are_all_songs_available(page_json['trackinfo'])
-
-        self.art_url = 'https://f4.bcbits.com/img/a' + str(page_json['current']['art_id']) + '_0.jpg'
-
-        self.keywords = page_json['keywords']
-
-        self.publisher = page_json['publisher']['@id']
-
-        if page_json['current']['about'] != None:
-            self.album_bio = page_json['current']['about']
-
-        # currently some albums get a time of 0, need to look if there are
-        # some other places to find the released and publish times.
-        try:
-            self.date_released = datetime.strptime(page_json['album_release_date'], '%d %b %Y %H:%M:%S %Z')
-            self.date_released = int(time.mktime(self.date_released.timetuple()))
-        except:
-            self.date_released = 0
-        
-        try:
-            self.date_published = datetime.strptime(page_json['datePublished'], '%d %b %Y %H:%M:%S %Z')
-            self.date_published = int(time.mktime(self.date_published.timetuple()))
-        except:
-            self.date_published = 0
-
-        try:
-            self.price['amount'] = float(page_json["current"]["minimum_price"])
-            self.price['currency'] = page_json['albumRelease'][0]['offers']['priceCurrency']
-        except:
-            self.price = None
-
-        try:
-            self.preorder = bool(page_json['album_is_preorder'])
-        except:
-            self.preorder = False
-
-
-        # doing the "advanced"
-        try:
-            self.advanced['copyright'] = page_json['copyrightNotice']
-        except:
-            self.advanced['copyright'] = ""
-
-        try:
-            self.date_last_modified = datetime.strptime(page_json['dateModified'], '%d %b %Y %H:%M:%S %Z')
-            self.date_last_modified = int(time.mktime(self.date_last_modified.timetuple()))
-        except:
-            self.advanced['last_edited'] = self.date_published
-
-        self.advanced['ids']['artist_id'] = page_json['current']['band_id']
-        self.advanced['ids']['album_id'] = page_json['id']
-        self.advanced['ids']['art_id'] = page_json['current']['art_id']
-        self.advanced['ids']['seller_id'] = page_json['current']['selling_band_id']
-        try:
-            self.advanced['featured_track'] = page_json['additionalProperty'][1]["value"]
-        except:
-            self.advanced['featured_track'] = 0
-
-        if page_json['current']['require_email'] != None:
-            self.advanced['email_required'] = page_json['current']['require_email']
-        else:
-            self.advanced['email_required'] = False
-        
-        try:
-            for review in page_json['comment']:
-                current_review = {}
-                try:
-                    current_review["username"] = str(review['author']['name'])
-                    current_review['username'] =  ' '.join( current_review["username"].split())
-                except:
-                    current_review["username"] = ""
-
-                current_review['profile_url'] = review['author']['url']
-
-                current_review['profile_picture'] = review['author']['image']
-                current_review['profile_picture'] = current_review['profile_picture'].split('_')[0] + '_0.jpg'
-
-                current_review['review'] = str(review['text'][0])
-                current_review['review'] = ' '.join(current_review['review'].split())
-                try:
-                    current_review['favorite_track'] = str(review['text'][1].split(": ")[1])
-                except:
-                    current_review['favorite_track'] = ""
-
-                self.advanced['reviews'].append(current_review)
-        except:
+            self.album_about = result['about']
+        except KeyError:
             pass
 
         try:
-            for supporter in page_json['sponsor']:
-                try:
-                    current_supporter = {}
-
-                    current_supporter['username'] = supporter['name']
-                    current_supporter['profile_url'] = supporter['url']
-                    current_supporter['profile_picture'] = supporter['image'].split('_')[0] + '_0.jpg'
-
-                    self.advanced['supporters'].append(current_supporter)
-                except:
-                    pass
-        except:
-            pass
-    
-    # other methods
-    # need to organize the order of methods
-    @staticmethod
-    def generate_album_url(artist: str, slug: str, page_type: str) -> str:
-        """Generate an album url based on the artist and album name
-
-        :param artist: artist name
-        :param slug: Slug of album/track
-        :param page_type: Type of page album/track
-        :return: url as str
-        """
-        return f"http://{artist}.bandcamp.com/{page_type}/{slug}"
-
-    def get_album_art(self) -> str:
-        """Find and retrieve album art url from page
-
-        :return: url as str
-        """
-        try:
-            url = self.soup.find(id='tralbumArt').find_all('a')[0]['href']
-            return url
-        except None:
+            self.album_credits = result['credits']
+        except KeyError:
             pass
 
-    def get_json(self, url, debugging: bool = False):
-
-        headers = {'User-Agent': f'bandcamp-api/0 (https://github.com/RustyRin/bandcamp-api)'}
+        try:
+            self.album_id = result['id']
+        except KeyError:
+            raise FileNotFoundError('Could not find the album ID. This is either because could not find the album or \
+            it is not an album (such as a track, artist, label, etc. )')
 
         try:
-            response = requests.get(url, headers=headers)
-        except requests.exceptions.MissingSchema:
-            return None
+            self.art_id = result['art_id']
+        except KeyError:
+            pass
+
+        if self.art_id != 0:
+            self.art_url = "https://f4.bcbits.com/img/a" + str(self.art_id) + "_0.jpg"
 
         try:
-            self.soup = BeautifulSoup(response.text, "lxml")
-        except FeatureNotFound:
-            self.soup = BeautifulSoup(response.text, "html.parser")
-
-        logging.debug(" Generating BandcampJSON..")
-        bandcamp_json = BandcampJSON(self.soup, debugging).generate()
-        page_json = {}
-        for entry in bandcamp_json:
-            page_json = {**page_json, **json.loads(entry)}
-        logging.debug(" BandcampJSON generated..")
-
-        return page_json
-
-    def are_all_songs_available(self, tracks):
-        for track in tracks:
-            if (track['file'] is None or False):
-                return False
-
-        return True
-
-    def get_track_lyrics(self, track_url = None):
-        track_page = requests.get(track_url, headers=None)
+            self.album_url = result['bandcamp_url']
+        except KeyError:
+            raise FileNotFoundError("Album does not have a URL, this should not happen!")
 
         try:
-            track_soup = BeautifulSoup(track_page.text, 'lxml')
-        except FeatureNotFound:
-            track_page = BeautifulSoup(track_page.text, 'html.parser')
-        try:
-            track_lyrics = track_soup.find('div', {'class': 'lyricsText'})
-        except:
-            return ''
+            self.date_released_unix = result['release_date']
+        except KeyError:
+            pass
 
-        if track_lyrics:
-            return track_lyrics.text
+        # price info
+        try:
+            self.price = {
+                "currency": result['currency'],
+                "amount": result['price']
+            }
+        except KeyError:
+            pass
+
+        if self.price['amount'] == 0 or self.price['amount'] == 0.0:
+            self.is_free = True
         else:
-            return ''
+            self.is_free = False
+
+        try:
+            self.is_preorder = result['is_preorder']
+        except KeyError:
+            pass
+
+        try:
+            self.is_purchasable = result['is_purchasable']
+        except KeyError:
+            pass
+
+        try:
+            self.is_set_price = result['is_set_price']
+        except KeyError:
+            pass
+
+        # additional album info
+        try:
+            self.is_digital = result['has_digital_download']
+        except KeyError:
+            pass
+
+        try:
+            self.featured_track_id = result['featured_track_id']
+        except KeyError:
+            pass
+
+        try:
+            self.record_label_title = result['label']
+        except KeyError:
+            pass
+
+        try:
+            self.record_label_id = result['label_id']
+        except KeyError:
+            pass
+
+        try:
+            self.require_email = result['require_email']
+        except KeyError:
+            pass
+
+        try:
+            for tag in result['tags']:
+                self.tags.append(tag['name'])
+        except KeyError:
+            pass
+
+        try:
+            self.total_tracks = result['num_downloadable_tracks']
+        except KeyError:
+            pass
+
+        try:
+            self.artist_title = result['tralbum_artist']
+        except KeyError:
+            pass
+
+        try:
+            self.artist_id = result['band']['band_id']
+        except KeyError:
+            pass
+
+        try:
+            self.artist_url = self.album_url.split("album")[0]
+        except KeyError:
+            pass
+
+        for track in result['tracks']:
+            self.tracks.append(Track(artist_id=self.artist_id, track_id=track['track_id'], advanced=advanced))
+
+        # advanced scraping
+        # the api as i understand it, does not have a way for things like copyright, reviews, supporters
+        # to get these, going to use the web scraper method
+        # as this is basically legacy code, it will be slightly worse c:
+
+        if advanced is True:
+            try:
+                page_json = get_json(url=self.album_url)
+            except:
+                raise AttributeError("Error finding needed information. Either album is private/ \
+                gone, or the link is malformed")
+
+            try:
+                self.copyright = page_json['copyrightNotice']
+            except KeyError:
+                self.copyright = ""
+
+            self.reviews = []
+            try:
+                for review in page_json['comment']:
+                    current_review = {}
+
+                    try:
+                        current_review["username"] = str(review['author']['name'])
+                        current_review['username'] = ' '.join(current_review["username"].split())
+                    except:
+                        current_review["username"] = ""
+
+                    try:
+                        current_review['profile_url'] = review['author']['url']
+                    except:
+                        current_review['profile_url'] = ""
+
+                    try:
+                        current_review['profile_picture'] = review['author']['image']
+                        current_review['profile_picture'] = current_review['profile_picture'].split('_')[0] + '_0.jpg'
+                    except:
+                        current_review['profile_picture']  = ""
+
+                    try:
+                        current_review['review'] = str(review['text'][0])
+                        current_review['review'] = ' '.join(current_review['review'].split())
+                    except:
+                        current_review['review'] = ""
+
+                    try:
+                        current_review['favorite_track'] = str(review['text'][1].split(": ")[1])
+                    except:
+                        current_review['favorite_track'] = ""
+
+                    self.reviews.append(current_review)
+            except:
+                pass
+
+            self.supporters = []
+            try:
+                for supporter in page_json['sponsor']:
+                    try:
+                        current_supporter = {
+                            'username': supporter['name'],
+                            'profile_url': supporter['url'],
+                            'profile_picture': supporter['image'].split('_')[0] + '_0.jpg'
+                        }
+                        self.supporters.append(current_supporter)
+                    except:
+                        pass
+            except:
+                pass
+
+
+def get_album(album_id: int = None):
+    """With a given album ID and artist ID, get available information"""
+
+    response = requests.get(
+        url="https://bandcamp.com/api/mobile/25/tralbum_details",
+        headers={"tralbum_id": str(id)}
+    )
+
+
+def get_json(url, debugging: bool = False):
+
+    headers = {'User-Agent': f'bandcamp-api/0 (https://github.com/RustyRin/bandcamp-api)'}
+
+    try:
+        response = requests.get(url, headers=headers)
+    except requests.exceptions.MissingSchema:
+        return None
+
+    try:
+        soup = BeautifulSoup(response.text, "lxml")
+    except FeatureNotFound:
+        soup = BeautifulSoup(response.text, "html.parser")
+
+    logging.debug(" Generating BandcampJSON..")
+    bandcamp_json = BandcampJSON(soup, debugging).generate()
+    page_json = {}
+    for entry in bandcamp_json:
+        page_json = {**page_json, **json.loads(entry)}
+    logging.debug(" BandcampJSON generated..")
+
+    return page_json

@@ -9,39 +9,15 @@ import json
 from datetime import datetime
 import time
 
-def are_all_songs_available(tracks):
-        for track in tracks:
-            if (track['file'] is None or False):
-                return False
-
-        return True
-
-def get_track_lyrics(track_url = None):
-    track_page = requests.get(track_url, headers=None)
-
-    try:
-        track_soup = BeautifulSoup(track_page.text, 'lxml')
-    except FeatureNotFound:
-        track_page = BeautifulSoup(track_page.text, 'html.parser')
-    try:
-        track_lyrics = track_soup.find('div', {'class': 'lyricsText'})
-    except:
-        return ''
-
-    if track_lyrics:
-        return track_lyrics.text
-    else:
-        return ''
 
 def get_json(url, debugging: bool = False):
-
     header = {'User-Agent': f'bandcamp-api/0 (https://github.com/RustyRin/bandcamp-api)'}
 
     try:
         response = requests.get(url, headers=header)
     except requests.exceptions.MissingSchema:
         return None
-    
+
     try:
         soup = BeautifulSoup(response.text, "lxml")
     except FeatureNotFound:
@@ -58,98 +34,136 @@ def get_json(url, debugging: bool = False):
 
     return page_json
 
+
 class Track:
-    def __init__(self, track_url):
-        self.track_title = ""                 #
-        self.artist_title = ""                #
-        self.album_title = ""                 #
-        self.track_number = 0           #
-        self.date_published = 0              #
-        self.date_released = 0               #
-        self.date_last_modified = 0          #
-        self.tags = []                  #
-        self.price = {}                 #
-            # {
-            # "currency": "USD",
-            # "amount": 0.00
-            # }
-        self.album_art_url = ""
-        self.duration_seconds = 0.000   #
-        self.track_url = ""             #
-        self.album_url = ""             #
-        self.artist_url = ""            #
-        self.available = False          #
-        self.lyrics = ""                #
+    def __init__(self, artist_id: int, track_id: int, advanced: bool = False):
 
-        try:
-            page_json = get_json(url = track_url)
+        # object info
+        self.type = "track"
 
-        except Exception as err:
-            print(err)
-            raise AttributeError("Either the album URL given is either private, deleted or the link is malformed.")
+        # track information
+        self.track_id: int = 0
+        self.track_title: str = ""
+        self.track_number: int = 0
+        self.track_duration_seconds: float = 0.00
+        self.track_streamable: bool = None
+        self.has_lyrics: bool = None
+        self.lyrics: str = ""
+        self.is_price_set: bool = None
+        self.price: dict = {}
+        self.require_email: bool = None
+        self.is_purchasable: bool = None
+        self.is_free: bool = None
+        self.is_preorder: bool = None
+        self.tags: list = []
+        self.track_url: str = ""
 
-        for track_json in page_json['trackinfo']:
-            # i know its its a list of 1 element, dont care
-            self.track_title = track_json['title']
-            self.track_number = track_json['track_num']
-            self.duration_seconds = track_json['duration']
+        # art
+        self.art_id: int = 0
+        self.art_url: str = ""
 
-            self.artist_title = page_json['byArtist']['name']
+        # artist information
+        self.artist_id: int = 0
+        self.artist_title: str = ""
+
+        # album information
+        self.album_id: int = 0
+        self.album_title: str = ""
+
+        # label
+        self.label_id: int = 0
+        self.label_title: str = ""
+
+        # about
+        self.about: str = ""
+        self.credits: str = ""
+        self.date_released_unix: int = 0
+
+        # advanced
+        self.date_last_modified_unix: int = 0
+        self.date_published_unix: int = 0
+        self.supporters: list = []
+
+
+        response = requests.get(
+            url="https://bandcamp.com/api/mobile/25/tralbum_details?band_id=" + str(artist_id) +
+                "&tralbum_id=" + str(track_id) + "&tralbum_type=t"
+        )
+        result = response.json()
+        self.track_id = result['id']
+        self.track_title = result['title']
+        self.track_number = result['tracks'][0]['track_num']
+        self.track_duration_seconds = result['tracks'][0]['duration']
+        self.track_streamable = result['tracks'][0]['is_streamable']
+        self.has_lyrics = result['tracks'][0]['has_lyrics']
+
+        # getting lyrics, if there is any
+        if self.has_lyrics is True:
+            r = requests.get("https://bandcamp.com/api/mobile/25/tralbum_lyrics?tralbum_id=" + str(self.track_id) + \
+                             "&tralbum_type=t")
+            rr = r.json()
+            self.lyrics = rr['lyrics'][str(self.track_id)]
+
+        self.is_price_set = result['is_set_price']
+        self.price = {
+            "currency": result['currency'],
+            "amount": result['price']
+        }
+        self.require_email = result['require_email']
+        self.is_purchasable = result['is_purchasable']
+        self.is_free = result['free_download']
+        self.is_preorder = result['is_preorder']
+
+        for tag in result['tags']:
+            self.tags.append(tag['name'])
+
+        self.art_id = result['art_id']
+        self.art_url = "https://f4.bcbits.com/img/a" + str(self.art_id) + "_0.jpg"
+
+        self.artist_id = result['band']['band_id']
+        self.artist_title = result['band']['name']
+
+        self.album_id = result['album_id']
+        self.album_title = result['album_title']
+
+        self.label_id = result['label_id']
+        self.label_title = result['label']
+
+        self.about = result['about']
+        self.credits = result['credits']
+
+        self.date_released_unix = result['release_date']
+
+        self.track_url = result['bandcamp_url']
+
+        if advanced:
+            try:
+                page_json = get_json(url=self.track_url)
+            except:
+                raise FileNotFoundError("Could not get advanced data for track (ID:", self.track_id, ")")
 
             try:
-                self.artist_url = page_json['byArtist']['@id']
+                self.date_last_modified_unix = datetime.strptime(page_json['dateModified'], '%d %b %Y %H:%M:%S %Z')
+                self.date_last_modified_unix = int(time.mktime(self.date_last_modified_unix.timetuple()))
             except:
-                # ther is no artist url, so its link is the publisher link
-                self.artist_url = page_json['publisher']['@id']
+                self.date_last_modified_unix = 0
 
             try:
-                self.album_title = page_json['inAlbum']['name']
-                self.album_url = page_json['inAlbum']['@id']
+                self.date_published_unix = datetime.strptime(page_json['datePublished'], '%d %b %Y %H:%M:%S %Z')
+                self.date_published_unix = int(time.mktime(self.date_published_unix.timetuple()))
             except:
-                # its a single
-                self.album_title = ""
-                self.album_url = page_json['url']
-
-            self.track_url = track_url
-
-
+                self.date_published_unix = 0
 
             try:
-                self.lyrics = get_track_lyrics(track_url)
+                for supporter in page_json['sponsor']:
+                    try:
+                        current_supporter = {
+                            'username': supporter['name'],
+                            'profile_url': supporter['url'],
+                            'profile_picture': supporter['image'].split('_')[0] + '_0.jpg'
+                        }
+                        self.supporters.append(current_supporter)
+                    except:
+                        pass
             except:
-                self.lyrics = ''
-
-            if track_json['file'] is None:
-                self.available = False
-            else:
-                self.available = True
-
-            try:
-                self.date_published = datetime.strptime(page_json['datePublished'], '%d %b %Y %H:%M:%S %Z')
-                self.date_published = int(time.mktime(self.date_published.timetuple()))
-            except:
-                self.date_published = 0
-
-            try:
-                self.date_released = datetime.strptime(page_json['album_release_date'], '%d %b %Y %H:%M:%S %Z')
-                self.date_released = int(time.mktime(self.date_released.timetuple()))
-            except:
-                self.date_released = 0
-
-            try:
-                self.date_last_modified = datetime.strptime(page_json['dateModified'], '%d %b %Y %H:%M:%S %Z')
-                self.date_last_modified = int(time.mktime(self.date_last_modified.timetuple()))
-            except:
-                self.date_released = 0
-
-            for tag in page_json['keywords']:
-                self.tags.append(tag)
-
-            try:
-                self.price['currency'] = page_json['inAlbum']['albumRelease'][1]['offers']['priceCurrency']
-                self.price['amount'] = page_json['inAlbum']['albumRelease'][1]['offers']['price']
-            except:
-                self.price['currency'] = page_json['inAlbum']['albumRelease'][0]['offers']['priceCurrency']
-                self.price['amount'] = page_json['inAlbum']['albumRelease'][0]['offers']['price']
-
-            self.album_art_url = page_json['image'].split('_')[0] + '_0.jpg'
+                pass
