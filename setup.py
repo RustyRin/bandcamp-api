@@ -7,7 +7,7 @@ setup(
     author="RustyRin",
     packages=['bandcamp_api'],
     url="https://github.com/RustyRin/bandcamp-api/",
-    install_requires=["setuptools", "bs4", "demjson3", 'html5lib', 'lxml'],
+    install_requires=["setuptools", "beautifulsoup4", "demjson3", 'html5lib', 'lxml', "requests"],
     keywords=["api", "bandcamp"],
     zip_safe=False
     )
