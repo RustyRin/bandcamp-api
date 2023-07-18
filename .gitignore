@@ -132,3 +132,4 @@ dmypy.json
 .vscode/settings.json
 bandcamp_api/output.json
 output.json
+/tests/
