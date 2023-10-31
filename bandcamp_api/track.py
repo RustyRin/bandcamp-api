@@ -95,6 +95,7 @@ class Track:
         self.track_number = result['tracks'][0]['track_num']
         self.track_duration_seconds = result['tracks'][0]['duration']
         self.track_streamable = result['tracks'][0]['is_streamable']
+        self.track_streamable_url = result['file']['mp3-128']
         self.has_lyrics = result['tracks'][0]['has_lyrics']
 
         # getting lyrics, if there is any
