@@ -16,6 +16,7 @@ from .genres import get_main_genres, get_subgenres
 from .search import search
 from .track import Track
 
+
 def get_json(self, url, debugging: bool = False):
     try:
         response = requests.get(url, headers=self.headers)
@@ -101,7 +102,8 @@ class Bandcamp:
 
         return None
 
-    def get_label(self, label_url: str) -> Label | None:
+    def get_label(self, label_url: str,
+                  label_id: int | str = None) -> Label | None:
         """Returns information for a given label URL"""
         results = search(search_string=label_url.split(".")[0].split("//")[1])
 
